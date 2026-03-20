@@ -3,7 +3,7 @@ import { ref, computed } from 'vue'
 
 const todos = ref([
   { id: 1, text: 'Learn Vue 3', completed: true },
-  { id: 2, text: 'Build a todo app', completed: false },
+  { id: 2, text: 'Build a beautiful todo app', completed: false },
   { id: 3, text: 'Deploy to Netlify', completed: false }
 ])
 
@@ -72,169 +72,145 @@ const allCompleted = computed(() => stats.value.total > 0 && stats.value.complet
 </script>
 
 <template>
-  <div class="min-h-screen py-12 px-4">
-    <div class="max-w-xl mx-auto">
+  <div data-theme="night" class="min-h-screen bg-base-200">
+    <div class="container mx-auto px-4 py-8 max-w-2xl">
+      
       <!-- Header -->
-      <div class="text-center mb-10">
-        <h1 class="text-6xl font-bold text-white mb-3 tracking-tight">✨ Super Todo</h1>
-        <p class="text-white/60 text-lg">Stay organized, get things done</p>
+      <div class="text-center mb-8">
+        <h1 class="text-4xl md:text-5xl font-bold text-primary mb-2">✨ Super Todo</h1>
+        <p class="text-base-content/60 text-lg">Stay organized, get things done</p>
       </div>
 
-      <!-- Add Todo Form -->
-      <div class="bg-white/10 backdrop-blur-lg rounded-3xl shadow-2xl p-2 mb-8 border border-white/20">
-        <form @submit.prevent="addTodo" class="flex gap-2">
-          <input
-            v-model="newTodo"
-            type="text"
-            placeholder="Add a new task..."
-            class="flex-1 px-6 py-4 text-lg bg-transparent text-white placeholder-white/50 focus:outline-none rounded-2xl"
-          />
-          <button
-            type="submit"
-            class="px-8 py-4 bg-gradient-to-r from-emerald-500 to-teal-500 text-white font-bold rounded-2xl hover:from-emerald-600 hover:to-teal-600 transition-all duration-200 shadow-lg hover:shadow-xl transform hover:scale-105"
-          >
-            <span class="text-xl">+</span>
-          </button>
-        </form>
+      <!-- Add Form -->
+      <div class="card bg-base-100 shadow-xl mb-6">
+        <div class="card-body p-4">
+          <form @submit.prevent="addTodo" class="flex flex-col sm:flex-row gap-2">
+            <input
+              v-model="newTodo"
+              type="text"
+              placeholder="What needs to be done?"
+              class="input input-bordered input-primary flex-1 w-full"
+            />
+            <button type="submit" class="btn btn-primary">
+              <span class="hidden sm:inline">Add Task</span>
+              <span class="sm:hidden text-xl">+</span>
+            </button>
+          </form>
+        </div>
       </div>
 
-      <!-- Filter Pills -->
-      <div class="flex justify-center gap-3 mb-6">
+      <!-- Filter Tabs -->
+      <div class="tabs tabs-boxed bg-base-100 shadow-lg mb-6 justify-center">
         <button
           v-for="f in ['all', 'active', 'completed']"
           :key="f"
           @click="filter = f"
-          :class="[
-            'px-6 py-2 rounded-full font-medium transition-all duration-200',
-            filter === f 
-              ? 'bg-white text-purple-600 shadow-lg' 
-              : 'text-white/70 hover:text-white hover:bg-white/10'
-          ]"
+          :class="['tab', { 'tab-active': filter === f }]"
         >
           {{ f.charAt(0).toUpperCase() + f.slice(1) }}
+          <span v-if="f === 'all'" class="badge badge-ghost ml-1">{{ stats.total }}</span>
+          <span v-if="f === 'active'" class="badge badge-primary ml-1">{{ stats.active }}</span>
+          <span v-if="f === 'completed'" class="badge badge-secondary ml-1">{{ stats.completed }}</span>
         </button>
       </div>
 
       <!-- Todo List -->
-      <div class="bg-white/10 backdrop-blur-lg rounded-3xl shadow-2xl overflow-hidden border border-white/20">
-        <!-- Header -->
-        <div v-if="stats.total > 0" class="px-6 py-4 bg-white/5 border-b border-white/10 flex justify-between items-center">
-          <span class="text-white/70 text-sm">
-            {{ stats.active }} {{ stats.active === 1 ? 'task' : 'tasks' }} remaining
-          </span>
-          <button
-            v-if="allCompleted && stats.total > 0"
-            class="text-emerald-400 text-sm font-medium hover:text-emerald-300 transition"
-          >
-            🎉 All done!
-          </button>
-        </div>
-
-        <!-- Items -->
-        <ul v-if="filteredTodos.length">
-          <li
-            v-for="todo in filteredTodos"
-            :key="todo.id"
-            class="group px-6 py-5 border-b border-white/10 last:border-b-0 hover:bg-white/5 transition-all duration-150"
-          >
-            <!-- Normal View -->
-            <div v-if="editingId !== todo.id" class="flex items-center gap-4">
-              <button
-                @click="toggleTodo(todo.id)"
-                :class="[
-                  'w-7 h-7 rounded-full border-2 flex items-center justify-center transition-all duration-200',
-                  todo.completed 
-                    ? 'bg-emerald-500 border-emerald-500' 
-                    : 'border-white/40 hover:border-white/60'
-                ]"
-              >
-                <span v-if="todo.completed" class="text-white text-sm">✓</span>
-              </button>
-              
-              <span
-                @dblclick="startEdit(todo)"
-                :class="[
-                  'flex-1 text-lg cursor-pointer',
-                  todo.completed ? 'line-through text-white/40' : 'text-white'
-                ]"
-              >
-                {{ todo.text }}
-              </span>
-              
-              <button
-                @click="startEdit(todo)"
-                class="text-white/30 hover:text-white/60 transition opacity-0 group-hover:opacity-100"
-              >
-                ✎
-              </button>
-              
-              <button
-                @click="deleteTodo(todo.id)"
-                class="text-white/30 hover:text-red-400 transition opacity-0 group-hover:opacity-100"
-              >
-                ✕
-              </button>
+      <div class="card bg-base-100 shadow-xl">
+        <div class="card-body p-0">
+          
+          <!-- Stats Bar -->
+          <div v-if="stats.total > 0" class="px-4 py-3 bg-base-200/50 border-b border-base-300 flex flex-wrap justify-between items-center gap-2">
+            <span class="text-sm text-base-content/60">
+              {{ stats.active }} {{ stats.active === 1 ? 'task' : 'tasks' }} left
+            </span>
+            <div v-if="allCompleted" class="badge badge-success gap-1">
+              🎉 All done!
             </div>
-
-            <!-- Edit View -->
-            <div v-else class="flex items-center gap-2">
-              <input
-                v-model="editText"
-                type="text"
-                @keyup.enter="saveEdit"
-                @keyup.escape="cancelEdit"
-                class="flex-1 px-4 py-2 text-lg bg-white/10 text-white rounded-xl border border-white/20 focus:border-white/40 focus:outline-none"
-                autofocus
-              />
-              <button
-                @click="saveEdit"
-                class="px-4 py-2 bg-emerald-500 text-white rounded-xl hover:bg-emerald-600 transition"
-              >
-                Save
-              </button>
-              <button
-                @click="cancelEdit"
-                class="px-4 py-2 text-white/60 hover:text-white transition"
-              >
-                Cancel
-              </button>
-            </div>
-          </li>
-        </ul>
-
-        <!-- Empty State -->
-        <div v-else class="px-6 py-16 text-center">
-          <div class="text-6xl mb-4">
-            {{ filter === 'all' ? '📝' : filter === 'active' ? '🎯' : '✅' }}
           </div>
-          <p class="text-white/50 text-lg">
-            {{ filter === 'all' ? 'No tasks yet' : filter === 'active' ? 'No active tasks' : 'No completed tasks' }}
-          </p>
-          <p class="text-white/30 text-sm mt-2">
-            {{ filter === 'all' ? 'Add one above!' : 'Try a different filter' }}
-          </p>
-        </div>
 
-        <!-- Footer -->
-        <div v-if="stats.completed > 0" class="px-6 py-4 bg-white/5 border-t border-white/10">
-          <button
-            @click="clearCompleted"
-            class="text-red-400/70 hover:text-red-400 text-sm font-medium transition"
-          >
-            🗑️ Clear {{ stats.completed }} completed {{ stats.completed === 1 ? 'task' : 'tasks' }}
-          </button>
+          <!-- Items -->
+          <ul class="menu menu-lg divide-y divide-base-200">
+            <li v-for="todo in filteredTodos" :key="todo.id">
+              
+              <!-- Normal View -->
+              <div v-if="editingId !== todo.id" class="flex items-center gap-3 px-4 py-3 hover:bg-base-200/50 transition-colors">
+                <input
+                  type="checkbox"
+                  :checked="todo.completed"
+                  @change="toggleTodo(todo.id)"
+                  class="checkbox checkbox-primary checkbox-lg"
+                />
+                
+                <span
+                  @dblclick="startEdit(todo)"
+                  :class="['flex-1 text-lg cursor-pointer', { 'line-through text-base-content/40': todo.completed }]"
+                >
+                  {{ todo.text }}
+                </span>
+                
+                <div class="flex gap-1">
+                  <button @click="startEdit(todo)" class="btn btn-ghost btn-sm btn-square">
+                    <span class="text-lg">✏️</span>
+                  </button>
+                  <button @click="deleteTodo(todo.id)" class="btn btn-ghost btn-sm btn-square text-error">
+                    <span class="text-lg">🗑️</span>
+                  </button>
+                </div>
+              </div>
+
+              <!-- Edit View -->
+              <div v-else class="px-4 py-3 bg-base-200/50">
+                <div class="flex flex-col sm:flex-row gap-2">
+                  <input
+                    v-model="editText"
+                    type="text"
+                    @keyup.enter="saveEdit"
+                    @keyup.escape="cancelEdit"
+                    class="input input-bordered input-primary flex-1"
+                    autofocus
+                  />
+                  <div class="flex gap-1">
+                    <button @click="saveEdit" class="btn btn-success btn-sm">Save</button>
+                    <button @click="cancelEdit" class="btn btn-ghost btn-sm">Cancel</button>
+                  </div>
+                </div>
+              </div>
+            </li>
+          </ul>
+
+          <!-- Empty State -->
+          <div v-if="filteredTodos.length === 0" class="p-8 text-center">
+            <div class="text-6xl mb-4">
+              {{ filter === 'all' ? '📝' : filter === 'active' ? '🎯' : '✅' }}
+            </div>
+            <p class="text-base-content/50 text-lg">
+              {{ filter === 'all' ? 'No tasks yet' : filter === 'active' ? 'No active tasks' : 'No completed tasks' }}
+            </p>
+            <p class="text-base-content/30 text-sm mt-2">
+              {{ filter === 'all' ? 'Add one above!' : 'Try a different filter' }}
+            </p>
+          </div>
+
+          <!-- Footer -->
+          <div v-if="stats.completed > 0" class="px-4 py-3 bg-base-200/50 border-t border-base-300">
+            <button @click="clearCompleted" class="btn btn-error btn-sm btn-outline gap-2">
+              <span>🗑️</span>
+              Clear {{ stats.completed }} completed {{ stats.completed === 1 ? 'task' : 'tasks' }}
+            </button>
+          </div>
         </div>
       </div>
 
       <!-- Footer -->
-      <div class="text-center mt-8 space-y-2">
-        <p class="text-white/40 text-sm">
-          Double-click to edit • Built with Vue 3 + Tailwind CSS
+      <div class="text-center mt-8 space-y-1">
+        <p class="text-base-content/40 text-sm">
+          Double-click to edit • Built with Vue 3 + Tailwind CSS + daisyUI
         </p>
-        <p class="text-white/30 text-xs">
-          Powered by ☁️ Netlify
+        <p class="text-base-content/30 text-xs">
+          Powered by ☁️ Netlify • Deployed with ❤️
         </p>
       </div>
+
     </div>
   </div>
 </template>
