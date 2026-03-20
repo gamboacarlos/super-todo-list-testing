@@ -9,6 +9,8 @@ const todos = ref([
 
 const newTodo = ref('')
 const filter = ref('all')
+const editingId = ref(null)
+const editText = ref('')
 
 const addTodo = () => {
   if (newTodo.value.trim()) {
@@ -30,6 +32,25 @@ const deleteTodo = (id) => {
   todos.value = todos.value.filter(t => t.id !== id)
 }
 
+const startEdit = (todo) => {
+  editingId.value = todo.id
+  editText.value = todo.text
+}
+
+const saveEdit = () => {
+  if (editText.value.trim() && editingId.value) {
+    const todo = todos.value.find(t => t.id === editingId.value)
+    if (todo) todo.text = editText.value.trim()
+  }
+  editingId.value = null
+  editText.value = ''
+}
+
+const cancelEdit = () => {
+  editingId.value = null
+  editText.value = ''
+}
+
 const clearCompleted = () => {
   todos.value = todos.value.filter(t => !t.completed)
 }
@@ -46,44 +67,48 @@ const stats = computed(() => {
   const active = total - completed
   return { total, completed, active }
 })
+
+const allCompleted = computed(() => stats.value.total > 0 && stats.value.completed === stats.value.total)
 </script>
 
 <template>
-  <div class="min-h-screen py-10 px-4">
-    <div class="max-w-lg mx-auto">
+  <div class="min-h-screen py-12 px-4">
+    <div class="max-w-xl mx-auto">
       <!-- Header -->
-      <div class="text-center mb-8">
-        <h1 class="text-5xl font-bold text-white mb-2">🚀 Super Todo List</h1>
-        <p class="text-white/70 text-lg">Built with Vue 3 + Tailwind CSS</p>
+      <div class="text-center mb-10">
+        <h1 class="text-6xl font-bold text-white mb-3 tracking-tight">✨ Super Todo</h1>
+        <p class="text-white/60 text-lg">Stay organized, get things done</p>
       </div>
 
       <!-- Add Todo Form -->
-      <div class="bg-white rounded-2xl shadow-xl p-6 mb-6">
+      <div class="bg-white/10 backdrop-blur-lg rounded-3xl shadow-2xl p-2 mb-8 border border-white/20">
         <form @submit.prevent="addTodo" class="flex gap-2">
           <input
             v-model="newTodo"
             type="text"
-            placeholder="What needs to be done?"
-            class="flex-1 px-5 py-4 text-lg rounded-xl border-2 border-gray-200 focus:border-purple-500 focus:outline-none transition"
+            placeholder="Add a new task..."
+            class="flex-1 px-6 py-4 text-lg bg-transparent text-white placeholder-white/50 focus:outline-none rounded-2xl"
           />
           <button
             type="submit"
-            class="px-6 py-4 text-lg bg-purple-600 text-white rounded-xl font-semibold hover:bg-purple-700 transition"
+            class="px-8 py-4 bg-gradient-to-r from-emerald-500 to-teal-500 text-white font-bold rounded-2xl hover:from-emerald-600 hover:to-teal-600 transition-all duration-200 shadow-lg hover:shadow-xl transform hover:scale-105"
           >
-            Add
+            <span class="text-xl">+</span>
           </button>
         </form>
       </div>
 
-      <!-- Filter Buttons -->
-      <div class="flex justify-center gap-2 mb-4">
+      <!-- Filter Pills -->
+      <div class="flex justify-center gap-3 mb-6">
         <button
           v-for="f in ['all', 'active', 'completed']"
           :key="f"
           @click="filter = f"
           :class="[
-            'px-5 py-2 rounded-lg font-medium text-lg transition',
-            filter === f ? 'bg-white text-purple-600' : 'text-white/70 hover:text-white'
+            'px-6 py-2 rounded-full font-medium transition-all duration-200',
+            filter === f 
+              ? 'bg-white text-purple-600 shadow-lg' 
+              : 'text-white/70 hover:text-white hover:bg-white/10'
           ]"
         >
           {{ f.charAt(0).toUpperCase() + f.slice(1) }}
@@ -91,57 +116,125 @@ const stats = computed(() => {
       </div>
 
       <!-- Todo List -->
-      <div class="bg-white rounded-2xl shadow-xl overflow-hidden">
+      <div class="bg-white/10 backdrop-blur-lg rounded-3xl shadow-2xl overflow-hidden border border-white/20">
+        <!-- Header -->
+        <div v-if="stats.total > 0" class="px-6 py-4 bg-white/5 border-b border-white/10 flex justify-between items-center">
+          <span class="text-white/70 text-sm">
+            {{ stats.active }} {{ stats.active === 1 ? 'task' : 'tasks' }} remaining
+          </span>
+          <button
+            v-if="allCompleted && stats.total > 0"
+            class="text-emerald-400 text-sm font-medium hover:text-emerald-300 transition"
+          >
+            🎉 All done!
+          </button>
+        </div>
+
+        <!-- Items -->
         <ul v-if="filteredTodos.length">
           <li
             v-for="todo in filteredTodos"
             :key="todo.id"
-            class="flex items-center gap-4 px-6 py-5 border-b border-gray-100 last:border-b-0 hover:bg-gray-50 transition"
+            class="group px-6 py-5 border-b border-white/10 last:border-b-0 hover:bg-white/5 transition-all duration-150"
           >
-            <input
-              type="checkbox"
-              :checked="todo.completed"
-              @change="toggleTodo(todo.id)"
-              class="w-6 h-6 rounded border-gray-300 text-purple-600 focus:ring-purple-500"
-            />
-            <span
-              :class="[
-                'flex-1 text-xl',
-                todo.completed ? 'line-through text-gray-400' : 'text-gray-800'
-              ]"
-            >
-              {{ todo.text }}
-            </span>
-            <button
-              @click="deleteTodo(todo.id)"
-              class="text-red-400 hover:text-red-600 text-xl transition"
-            >
-              ✕
-            </button>
+            <!-- Normal View -->
+            <div v-if="editingId !== todo.id" class="flex items-center gap-4">
+              <button
+                @click="toggleTodo(todo.id)"
+                :class="[
+                  'w-7 h-7 rounded-full border-2 flex items-center justify-center transition-all duration-200',
+                  todo.completed 
+                    ? 'bg-emerald-500 border-emerald-500' 
+                    : 'border-white/40 hover:border-white/60'
+                ]"
+              >
+                <span v-if="todo.completed" class="text-white text-sm">✓</span>
+              </button>
+              
+              <span
+                @dblclick="startEdit(todo)"
+                :class="[
+                  'flex-1 text-lg cursor-pointer',
+                  todo.completed ? 'line-through text-white/40' : 'text-white'
+                ]"
+              >
+                {{ todo.text }}
+              </span>
+              
+              <button
+                @click="startEdit(todo)"
+                class="text-white/30 hover:text-white/60 transition opacity-0 group-hover:opacity-100"
+              >
+                ✎
+              </button>
+              
+              <button
+                @click="deleteTodo(todo.id)"
+                class="text-white/30 hover:text-red-400 transition opacity-0 group-hover:opacity-100"
+              >
+                ✕
+              </button>
+            </div>
+
+            <!-- Edit View -->
+            <div v-else class="flex items-center gap-2">
+              <input
+                v-model="editText"
+                type="text"
+                @keyup.enter="saveEdit"
+                @keyup.escape="cancelEdit"
+                class="flex-1 px-4 py-2 text-lg bg-white/10 text-white rounded-xl border border-white/20 focus:border-white/40 focus:outline-none"
+                autofocus
+              />
+              <button
+                @click="saveEdit"
+                class="px-4 py-2 bg-emerald-500 text-white rounded-xl hover:bg-emerald-600 transition"
+              >
+                Save
+              </button>
+              <button
+                @click="cancelEdit"
+                class="px-4 py-2 text-white/60 hover:text-white transition"
+              >
+                Cancel
+              </button>
+            </div>
           </li>
         </ul>
-        <div v-else class="px-6 py-8 text-center text-gray-400 text-lg">
-          <p v-if="filter === 'all'">No todos yet! Add one above.</p>
-          <p v-else>No {{ filter }} todos.</p>
+
+        <!-- Empty State -->
+        <div v-else class="px-6 py-16 text-center">
+          <div class="text-6xl mb-4">
+            {{ filter === 'all' ? '📝' : filter === 'active' ? '🎯' : '✅' }}
+          </div>
+          <p class="text-white/50 text-lg">
+            {{ filter === 'all' ? 'No tasks yet' : filter === 'active' ? 'No active tasks' : 'No completed tasks' }}
+          </p>
+          <p class="text-white/30 text-sm mt-2">
+            {{ filter === 'all' ? 'Add one above!' : 'Try a different filter' }}
+          </p>
         </div>
 
-        <!-- Stats Footer -->
-        <div class="px-6 py-4 bg-gray-50 flex justify-between items-center text-base text-gray-500">
-          <span>{{ stats.active }} items left</span>
+        <!-- Footer -->
+        <div v-if="stats.completed > 0" class="px-6 py-4 bg-white/5 border-t border-white/10">
           <button
-            v-if="stats.completed > 0"
             @click="clearCompleted"
-            class="text-red-500 hover:text-red-600 transition"
+            class="text-red-400/70 hover:text-red-400 text-sm font-medium transition"
           >
-            Clear completed ({{ stats.completed }})
+            🗑️ Clear {{ stats.completed }} completed {{ stats.completed === 1 ? 'task' : 'tasks' }}
           </button>
         </div>
       </div>
 
       <!-- Footer -->
-      <p class="text-center text-white/50 mt-6 text-base">
-        Made with ❤️ using Vue 3 + Tailwind CSS • Deployed on Netlify
-      </p>
+      <div class="text-center mt-8 space-y-2">
+        <p class="text-white/40 text-sm">
+          Double-click to edit • Built with Vue 3 + Tailwind CSS
+        </p>
+        <p class="text-white/30 text-xs">
+          Powered by ☁️ Netlify
+        </p>
+      </div>
     </div>
   </div>
 </template>
